@@ -10,16 +10,16 @@ export class ProductDetail {
   sourceId: string;
 
   @Prop()
-  description: string;
+  description?: string;
 
   @Prop({ type: Object })
   specs: Record<string, any>;
 
   @Prop()
-  ratingsAvg: number;
+  ratingsAvg?: number;
 
   @Prop()
-  reviewsCount: number;
+  reviewsCount?: number;
 }
 
 export const ProductDetailSchema =

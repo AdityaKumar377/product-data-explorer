@@ -5,22 +5,24 @@ import { Model } from 'mongoose';
 import { Product, ProductDocument } from './product.schema';
 import { ProductDetail, ProductDetailDocument } from './product-detail.schema';
 import { Review, ReviewDocument } from './review.schema';
+
 import { scrapeProductsFromCategory } from '../scraper/product.scraper';
+import { scrapeProductDetail } from '../scraper/product-detail.scraper';
 
 @Injectable()
 export class ProductService {
   constructor(
     @InjectModel(Product.name)
-    private productModel: Model<ProductDocument>,
+    private readonly productModel: Model<ProductDocument>,
 
     @InjectModel(ProductDetail.name)
-    private productDetailModel: Model<ProductDetailDocument>,
+    private readonly productDetailModel: Model<ProductDetailDocument>,
 
     @InjectModel(Review.name)
-    private reviewModel: Model<ReviewDocument>,
+    private readonly reviewModel: Model<ReviewDocument>,
   ) {}
 
-  // ✅ PRODUCT GRID (READ-ONLY)
+  // ✅ PRODUCT GRID
   async getProducts(category: string, page = 1, limit = 10) {
     return this.productModel
       .find({ categorySlug: category })
@@ -29,15 +31,45 @@ export class ProductService {
       .lean();
   }
 
-  // ✅ PRODUCT DETAIL
+  // ✅ PRODUCT DETAIL (ON-DEMAND SCRAPE + CACHE)
   async getProductDetail(sourceId: string) {
-    const detail = await this.productDetailModel
-      .findOne({ sourceId })
-      .lean();
+    const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
-    const reviews = await this.reviewModel
-      .find({ sourceId })
-      .lean();
+    let detail = await this.productDetailModel.findOne({ sourceId });
+
+    const isExpired = false;
+
+    const hasBadDescription =
+      !detail ||
+      !detail.description ||
+      detail.description.length > 3000;
+
+    if (!detail || isExpired || hasBadDescription) {
+      const product = await this.productModel.findOne({ sourceId });
+
+      if (!product) {
+        throw new Error(`Product not found: ${sourceId}`);
+      }
+
+      console.log(`[SCRAPE] Fetching product detail: ${sourceId}`);
+
+      const scraped = await scrapeProductDetail(product.sourceUrl);
+
+      detail = await this.productDetailModel.findOneAndUpdate(
+        { sourceId },
+        {
+          $set: {
+            sourceId,
+            description: scraped.description ?? '',
+            specs: scraped.specs,
+            updatedAt: new Date(),
+          },
+        },
+        { upsert: true, new: true },
+      );
+    }
+
+    const reviews = await this.reviewModel.find({ sourceId }).lean();
 
     const recommendations = await this.productModel
       .find({ sourceId: { $ne: sourceId } })
@@ -51,11 +83,8 @@ export class ProductService {
     };
   }
 
-  // ✅ SCRAPE + SAVE PRODUCTS
-  async scrapeAndSaveProducts(
-    categorySlug: string,
-    categoryUrl: string,
-  ) {
+  // ✅ SCRAPE CATEGORY
+  async scrapeAndSaveProducts(categorySlug: string, categoryUrl: string) {
     const scraped = await scrapeProductsFromCategory(
       categorySlug,
       categoryUrl,
@@ -65,21 +94,20 @@ export class ProductService {
 
     for (const item of scraped) {
       await this.productModel.updateOne(
-  { sourceId: item.sourceId },
-  {
-    $set: {
-      title: item.title,
-      sourceUrl: item.sourceUrl,
-      imageUrl: item.imageUrl,
-      categorySlug: item.categorySlug,
-      lastScrapedAt: new Date(),
-    },
-  },
-  { upsert: true },
-);
+        { sourceId: item.sourceId },
+        {
+          $set: {
+            title: item.title,
+            sourceUrl: item.sourceUrl,
+            imageUrl: item.imageUrl,
+            categorySlug: item.categorySlug,
+            lastScrapedAt: new Date(),
+          },
+        },
+        { upsert: true },
+      );
 
-savedCount++;
-
+      savedCount++;
     }
 
     return { count: savedCount };

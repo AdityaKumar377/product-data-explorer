@@ -1,6 +1,6 @@
 {
 	"id": "lPtykg1ntFBfNyM",
-	"json": "{\"id\":\"lPtykg1ntFBfNyM\",\"url\":\"https://www.worldofbooks.com/collections/fantasy-fiction-books\",\"loadedUrl\":\"https://www.worldofbooks.com/en-gb/collections/fantasy-fiction-books\",\"uniqueKey\":\"https://www.worldofbooks.com/collections/fantasy-fiction-books\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"__crawlee\":{\"state\":4}},\"handledAt\":\"2026-01-06T18:34:26.930Z\"}",
+	"json": "{\"id\":\"lPtykg1ntFBfNyM\",\"url\":\"https://www.worldofbooks.com/collections/fantasy-fiction-books\",\"loadedUrl\":\"https://www.worldofbooks.com/en-gb/collections/fantasy-fiction-books\",\"uniqueKey\":\"https://www.worldofbooks.com/collections/fantasy-fiction-books\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"__crawlee\":{\"state\":4}},\"handledAt\":\"2026-01-08T12:27:19.674Z\"}",
 	"method": "GET",
 	"orderNo": null,
 	"retryCount": 0,
